@@ -1,5 +1,5 @@
-![Banner del proyecto](URL-que-copiaste)
 
+![Banner del proyecto]https://github.com/soyCamila01/configuracion-ssh-segura/blob/main/URL-que-copiaste
 # 🔐 configuracion_ssh_segura.sh
 
 Automatiza la configuración segura de SSH en sistemas Debian/Ubuntu de forma rápida, clara y fiable. Este script instala y configura `openssh-server`, refuerza las directivas críticas del archivo `sshd_config`, valida el estado del servicio y proporciona una interfaz interactiva fácil de usar.
