@@ -1,0 +1,15 @@
+# Archivos temporales
+*.swp
+*.bak
+*.tmp
+*~
+
+# Archivos ocultos del sistema
+.DS_Store
+Thumbs.db
+
+# Historial de comandos
+.bash_history
+
+# Archivos de log
+*.log
