@@ -34,14 +34,11 @@ Automatiza la configuración segura de SSH en sistemas Debian/Ubuntu de forma r�
    ```bash
    wget https://github.com/soyCamila01/configuracion-ssh-segura/raw/main/configuracion_ssh_segura.sh
    chmod +x configuracion_ssh_segura.sh
-Ejecutalo con privilegios:
 
-bash
-sudo ./configuracion_ssh_segura.sh
+2. Ejecutalo con privilegios:
+   sudo ./configuracion_ssh_segura.sh
 🧪 Modo diagnóstico
 Para ver la configuración actual sin modificar nada:
-
-bash
 sudo ./configuracion_ssh_segura.sh --verificar
 📂 Archivos generados
 /etc/ssh/sshd_config.bak → Copia de seguridad del archivo antes de aplicar cambios
@@ -53,7 +50,4 @@ sudo ./configuracion_ssh_segura.sh --verificar
 Este script está distribuido bajo la licencia MIT. Usalo, modificalo, compartilo.
 
 ✍️ Autora
-Camila Admin de sistemas, defensora del acceso seguro.
-
-
-—
+Camila Admin de sistemas, defensora del acceso seguro
