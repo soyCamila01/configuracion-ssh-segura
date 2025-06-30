@@ -1,252 +1,154 @@
-🔐 Configuración SSH Segura para GitHub
+---
 
-Guía completa para configurar una clave SSH segura con GitHub. Autentícate desde la terminal sin necesidad de ingresar usuario y contraseña en cada git push, pull o clone. ¡Sigue estos pasos y tendrás una configuración robusta en minutos!
+🔐 Configuración Segura de SSH
 
-🧠 ¿Qué es SSH?
+Este repositorio documenta los pasos para fortalecer la seguridad de un servidor SSH en Linux. Incluye configuraciones para desactivar accesos inseguros, habilitar autenticación mediante llaves y buenas prácticas para proteger el servicio SSH.
 
-SSH (Secure Shell) es un protocolo criptográfico que garantiza una comunicación segura entre tu computadora y servidores remotos como GitHub. Usar claves SSH es más seguro y práctico que la autenticación por contraseña.
 
+---
 
-🚀 Pasos para configurar SSH
+⚠️ Advertencia
 
-1. Generar una clave SSH segura
+Antes de realizar cualquier cambio, haz un backup de tu archivo de configuración actual:
 
-Usa el algoritmo Ed25519, recomendado por ser más seguro, compacto y eficiente que RSA:
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 
-ssh-keygen -t ed25519 -C "tu_correo@example.com"
+Si la nueva configuración falla, podrás restaurarla con:
 
+sudo mv /etc/ssh/sshd_config.bak /etc/ssh/sshd_config
+sudo systemctl restart ssh
 
-Instrucciones:
 
-Reemplaza tu_correo@example.com con el correo asociado a tu cuenta de GitHub.
+---
 
+🛠️ Configuración del Servidor SSH
 
-
-Cuando se te pida, ingresa una frase de seguridad fuerte. No la dejes en blanco.
-
-
-
-Acepta la ubicación predeterminada (~/.ssh/id_ed25519) presionando Enter.
-
-
-
-💡 Tip: Usa una frase de seguridad única y memorable, como una oración corta. Evita contraseñas obvias. ⚠ Nota: Si tu sistema no soporta Ed25519 (muy raro), usa RSA con ssh-keygen -t rsa -b 4096 -C "tu_correo@example.com".
-
-
-
-2. Iniciar el agente SSH y agregar la clave
-
-Inicia el agente SSH para gestionar tus claves:
-
-eval "$(ssh-agent -s)"
-
-Agrega tu clave privada al agente:
-
-ssh-add ~/.ssh/id_ed25519
-
-
-En macOS (para integrar con el llavero y evitar repetir la frase de seguridad):
-
-ssh-add --apple-use-keychain ~/.ssh/id_ed25519
-
-
-
-⚠ Solución a errores comunes:
-
-
-Si recibes Could not open a connection to your authentication agent, verifica que el agente esté corriendo con eval "$(ssh-agent -s)".
-
-
-
-Si el comando ssh-add falla, asegúrate de que el archivo ~/.ssh/id_ed25519 existe.
-
-
-
-3. Configurar el archivo ~/.ssh/config (recomendado)
-
-Simplifica la conexión automática con GitHub creando un archivo de configuración:
-
-nano ~/.ssh/config
-
-Pega el siguiente contenido:
-
-Host github.com
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/id_ed25519
-  AddKeysToAgent yes
-  UseKeychain yes
-
-
-Instrucciones:
-
-
-Guarda con Ctrl + O, presiona Enter, y sal con Ctrl + X.
-
-
-
-Si el archivo ~/.ssh/config no existe, este comando lo creará.
-
-
-
-💡 Beneficio: Esta configuración asegura que GitHub use la clave correcta automáticamente. 🍎 Nota para macOS: UseKeychain yes permite que el llavero almacene la frase de seguridad.
-
-
-
-4. Proteger los permisos de las claves
-
-Asegura que solo tú puedas acceder a tus claves:
-
-chmod 600 ~/.ssh/id_ed25519
-chmod 644 ~/.ssh/id_ed25519.pub
-
-
-Por qué: El archivo privado (id_ed25519) debe ser de solo lectura para el propietario, mientras que el público (id_ed25519.pub) puede ser legible por otros.
-
-
-
-⚠ Verifica: Usa ls -l ~/.ssh/ para confirmar que los permisos sean correctos (-rw------- para el privado, -rw-r--r-- para el público).
-
-
-
-5. Añadir la clave pública a GitHub
-
-Muestra tu clave pública:
-
-cat ~/.ssh/id_ed25519.pub
-
-Copia la salida (debe empezar con ssh-ed25519 y terminar con tu correo).
-
-Luego, añádela a GitHub:
-
-
-
-Ve a github.com/settings/keys.
-
-
-
-Haz clic en New SSH key o Add SSH key.
-
-
-
-Asigna un título descriptivo (ej. "Mi portátil - 2025").
-
-
-
-Pega la clave en el campo "Key" (asegúrate de que esté en una sola línea).
-
-
-
-Haz clic en Add SSH key y autentícate si es necesario.
-
-
-
-⚠ Error común: No copies espacios o caracteres adicionales. La clave debe ser exacta.
-
-
-
-6. Verificar la conexión con GitHub
-
-Prueba la autenticación:
-
-ssh -T git@github.com
-
-Si todo está correcto, verás:
-
-Hi <tu_usuario>! You've successfully authenticated, but GitHub does not provide shell access.
-
-
-
-⚠ Solución a errores:
-
-
-
-
-
-"Permission denied (publickey)": Verifica que la clave pública esté correctamente añadida en GitHub y que el archivo ~/.ssh/config esté configurado.
-
-
-
-"Agent refused operation": Asegúrate de que la clave esté agregada al agente con ssh-add.
-
-
-
-🔒 (Opcional) Reforzar seguridad en servidores remotos
-
-Si administras un servidor (ej. Ubuntu), puedes deshabilitar la autenticación por contraseña para mayor seguridad:
-
-
-
-
-
-Edita el archivo de configuración SSH:
+Edita el archivo /etc/ssh/sshd_config con privilegios de superusuario:
 
 sudo nano /etc/ssh/sshd_config
 
+Asegúrate de tener estas líneas (o agrégalas/modifícalas):
 
+# Deshabilita el acceso como root para prevenir ataques directos
+PermitRootLogin no
 
-
-
-Asegúrate de que incluya:
-
+# Obliga al uso de llaves SSH, deshabilitando contraseñas
 PasswordAuthentication no
+
+# Habilita la autenticación por clave pública
 PubkeyAuthentication yes
 
+# Limita el acceso a usuarios específicos
+AllowUsers tu_usuario
+
+🔎 Contexto rápido:
+
+PermitRootLogin no: Evita que atacantes prueben contraseñas directamente sobre root.
+
+PasswordAuthentication no: Reduce el riesgo de ataques de fuerza bruta sobre contraseñas.
+
+AllowUsers: Minimiza el riesgo al restringir las cuentas permitidas.
+
+
+Guarda y cierra el archivo, luego reinicia el servicio SSH para aplicar cambios:
+
+sudo systemctl restart ssh
+
+
+---
+
+🔑 Generación de llaves SSH en el cliente
+
+En tu máquina cliente (desde donde te conectarás al servidor):
+
+1. Genera un par de llaves:
+
+
+
+ssh-keygen -t rsa -b 4096 -C "tu_email@example.com"
+
+2. Copia tu clave pública al servidor:
+
+
+
+ssh-copy-id tu_usuario@ip_del_servidor
+
+Esto agregará tu clave al archivo ~/.ssh/authorized_keys del servidor.
+
+
+---
+
+📂 Permisos correctos en el cliente
+
+Asegúrate de que los archivos tengan los permisos adecuados:
+
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/id_rsa
+chmod 644 ~/.ssh/id_rsa.pub
+
+
+---
+
+⚙️ Configuración de cliente SSH (~/.ssh/config)
+
+Para evitar repetir parámetros al conectarte, crea (o edita) ~/.ssh/config:
+
+Host mi_servidor
+    HostName ip_del_servidor
+    User tu_usuario
+    Port 22
+    IdentityFile ~/.ssh/id_rsa
+
+Con esto, podrás conectarte simplemente con:
+
+ssh mi_servidor
+
+
+---
+
+🔄 Cambio del puerto SSH (opcional)
+
+En /etc/ssh/sshd_config, puedes cambiar el puerto por uno no estándar para reducir intentos automáticos de ataque:
+
+Port 2222
+
+> ❗ Nota: Esto es solo una medida de ofuscación. No reemplaza una buena configuración de autenticación ni otras prácticas de seguridad.
 
 
 
 
-Guarda (Ctrl + O, Enter, Ctrl + X) y reinicia el servicio SSH:
+---
 
-sudo systemctl restart sshd
+✅ Pruebas de verificación
 
+Después de aplicar los cambios, prueba:
 
+Conectarte con tu llave:
 
-⚠ Precaución: Antes de desactivar la autenticación por contraseña, verifica que puedes conectarte al servidor con tu clave SSH. De lo contrario, podrías perder el acceso.
+ssh mi_servidor
 
+Intentar un login con password (debería fallar si PasswordAuthentication no está activo).
 
+Revisar los logs del servidor para errores:
 
-🛠️ Resolución de problemas
-
-
-
-
-
-Clave no funciona: Asegúrate de que la clave pública en GitHub coincide exactamente con ~/.ssh/id_ed25519.pub.
+sudo tail -f /var/log/auth.log
 
 
 
-Errores de permisos: Revisa los permisos con ls -l ~/.ssh/ y corrige con chmod si es necesario.
+---
+
+📌 Notas finales
+
+Esta guía fue probada en sistemas basados en Debian/Ubuntu. En otras distribuciones, la ubicación del archivo de configuración puede variar.
+
+Recuerda configurar un firewall para limitar los intentos de acceso, y considera herramientas como Fail2Ban para proteger aún más tu servidor SSH.
 
 
 
-Git sigue pidiendo contraseña: Verifica que estás usando la URL SSH del repositorio (git@github.com:usuario/repo.git) y no HTTPS.
+---
 
+🙌 Autor
 
+Creado y documentado por Camila ❤️
 
-Problemas en Windows: Usa Git Bash o WSL2 y asegúrate de que el agente SSH esté corriendo.
-
-
-
-📌 Recursos útiles
-
-
-
-
-
-🔗 Documentación oficial de GitHub sobre SSH
-
-
-
-🔐 Guía de ssh-keygen (OpenSSH)
-
-
-
-📁 Administrar claves SSH en GitHub
-
-
-
-💻 Autora
-
-Hecho con ❤️ por @soyCamila01
-🌟 ¡Comparte esta guía, sugiere mejoras o abre un issue si encuentras algo que perfeccionar! 🚀
+---
