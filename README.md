@@ -2,18 +2,18 @@
 
 🔐 Configuración Segura de SSH
 
-Este repositorio documenta los pasos para fortalecer la seguridad de un servidor SSH en Linux. Incluye configuraciones para desactivar accesos inseguros, habilitar autenticación mediante llaves y buenas prácticas para proteger el servicio SSH.
+Este repositorio documenta los pasos para reforzar la seguridad de un servidor SSH en Linux. Incluye configuraciones para desactivar accesos inseguros, habilitar autenticación con llaves y buenas prácticas para proteger el servicio SSH.
 
 
 ---
 
-⚠️ Advertencia
+⚠️ Advertencia importante
 
-Antes de realizar cualquier cambio, haz un backup de tu archivo de configuración actual:
+Antes de modificar /etc/ssh/sshd_config, haz un respaldo del archivo original. Un error en la configuración podría bloquear tu acceso remoto al servidor.
 
 sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 
-Si la nueva configuración falla, podrás restaurarla con:
+Si algo falla, puedes restaurar el backup con:
 
 sudo mv /etc/ssh/sshd_config.bak /etc/ssh/sshd_config
 sudo systemctl restart ssh
@@ -21,77 +21,87 @@ sudo systemctl restart ssh
 
 ---
 
-🛠️ Configuración del Servidor SSH
+🛠️ Configuración del servidor SSH
 
-Edita el archivo /etc/ssh/sshd_config con privilegios de superusuario:
+Edita el archivo de configuración:
 
 sudo nano /etc/ssh/sshd_config
 
-Asegúrate de tener estas líneas (o agrégalas/modifícalas):
+Agrega o modifica las siguientes líneas para mejorar la seguridad:
 
-# Deshabilita el acceso como root para prevenir ataques directos
+# Evita que el usuario root inicie sesión directamente por SSH
 PermitRootLogin no
 
-# Obliga al uso de llaves SSH, deshabilitando contraseñas
+# Desactiva la autenticación por contraseña
 PasswordAuthentication no
 
 # Habilita la autenticación por clave pública
 PubkeyAuthentication yes
 
-# Limita el acceso a usuarios específicos
+# Restringe el acceso SSH solo a usuarios permitidos
 AllowUsers tu_usuario
 
-🔎 Contexto rápido:
+📌 ¿Por qué estos parámetros?
 
-PermitRootLogin no: Evita que atacantes prueben contraseñas directamente sobre root.
+✅ PermitRootLogin no
+Evita ataques dirigidos directamente a la cuenta root, obligando a iniciar sesión con un usuario normal y luego usar sudo.
 
-PasswordAuthentication no: Reduce el riesgo de ataques de fuerza bruta sobre contraseñas.
+✅ PasswordAuthentication no
+Desactiva contraseñas para que solo sea posible autenticarse con llaves SSH, reduciendo significativamente el riesgo de ataques de fuerza bruta.
 
-AllowUsers: Minimiza el riesgo al restringir las cuentas permitidas.
+✅ PubkeyAuthentication yes
+Habilita la autenticación mediante clave pública/privada.
 
+✅ AllowUsers
+Limita el acceso SSH exclusivamente a las cuentas listadas, reduciendo la superficie de ataque.
 
-Guarda y cierra el archivo, luego reinicia el servicio SSH para aplicar cambios:
+Guarda el archivo y reinicia SSH:
 
 sudo systemctl restart ssh
 
 
 ---
 
-🔑 Generación de llaves SSH en el cliente
+🔑 Generar llaves SSH en el cliente
 
-En tu máquina cliente (desde donde te conectarás al servidor):
-
-1. Genera un par de llaves:
-
-
+En tu equipo local (cliente), crea un par de llaves RSA de 4096 bits:
 
 ssh-keygen -t rsa -b 4096 -C "tu_email@example.com"
 
-2. Copia tu clave pública al servidor:
+Cuando se te pregunte por la ubicación del archivo, puedes presionar ENTER para usar el directorio por defecto: ~/.ssh/id_rsa.
 
-
+Luego, copia tu clave pública al servidor:
 
 ssh-copy-id tu_usuario@ip_del_servidor
 
-Esto agregará tu clave al archivo ~/.ssh/authorized_keys del servidor.
+Esto añadirá automáticamente tu clave al archivo ~/.ssh/authorized_keys en el servidor.
 
 
 ---
 
-📂 Permisos correctos en el cliente
+📂 Permisos correctos de las llaves
 
-Asegúrate de que los archivos tengan los permisos adecuados:
+Asegúrate de tener los permisos adecuados en tu máquina cliente:
 
 chmod 700 ~/.ssh
 chmod 600 ~/.ssh/id_rsa
 chmod 644 ~/.ssh/id_rsa.pub
 
+🔎 Explicación:
+
+El directorio ~/.ssh debe ser accesible solo por el propietario.
+
+La clave privada id_rsa nunca debe ser leída por otros usuarios.
+
+La clave pública puede tener permisos más abiertos.
+
+
 
 ---
 
-⚙️ Configuración de cliente SSH (~/.ssh/config)
+⚙️ Configuración del cliente SSH (~/.ssh/config)
 
-Para evitar repetir parámetros al conectarte, crea (o edita) ~/.ssh/config:
+Opcionalmente, puedes configurar un acceso más sencillo creando o editando ~/.ssh/config:
 
 Host mi_servidor
     HostName ip_del_servidor
@@ -99,56 +109,59 @@ Host mi_servidor
     Port 22
     IdentityFile ~/.ssh/id_rsa
 
-Con esto, podrás conectarte simplemente con:
+Esto te permitirá conectarte con:
 
 ssh mi_servidor
 
 
 ---
 
-🔄 Cambio del puerto SSH (opcional)
+🔄 Cambiar el puerto SSH (opcional)
 
-En /etc/ssh/sshd_config, puedes cambiar el puerto por uno no estándar para reducir intentos automáticos de ataque:
+Para añadir una capa de ofuscación y reducir escaneos automáticos, puedes cambiar el puerto en /etc/ssh/sshd_config:
 
 Port 2222
 
-> ❗ Nota: Esto es solo una medida de ofuscación. No reemplaza una buena configuración de autenticación ni otras prácticas de seguridad.
+Recuerda abrir el nuevo puerto en tu firewall y cerrar el 22.
+
+> ⚠️ Nota: Cambiar el puerto ayuda a evitar bots automatizados, pero no reemplaza otras medidas de seguridad como llaves SSH, Fail2Ban o un firewall.
 
 
 
 
 ---
 
-✅ Pruebas de verificación
+✅ Cómo probar la configuración
 
-Después de aplicar los cambios, prueba:
+1. Abre una nueva terminal sin cerrar la actual, así evitarás perder acceso si algo sale mal.
 
-Conectarte con tu llave:
+
+2. Conéctate con:
 
 ssh mi_servidor
 
-Intentar un login con password (debería fallar si PasswordAuthentication no está activo).
 
-Revisar los logs del servidor para errores:
+3. Intenta iniciar sesión sin usar tu llave SSH (por ejemplo, desde otra máquina sin la clave) y verifica que falle si PasswordAuthentication está desactivado.
+
+
+4. Revisa los registros del servidor para detectar intentos fallidos o errores:
 
 sudo tail -f /var/log/auth.log
 
 
 
+
 ---
 
-📌 Notas finales
+🔒 Recomendaciones adicionales
 
-Esta guía fue probada en sistemas basados en Debian/Ubuntu. En otras distribuciones, la ubicación del archivo de configuración puede variar.
-
-Recuerda configurar un firewall para limitar los intentos de acceso, y considera herramientas como Fail2Ban para proteger aún más tu servidor SSH.
-
+✅ Configura un firewall como UFW o firewalld para permitir solo el puerto SSH que uses.
+✅ Considera instalar Fail2Ban para bloquear direcciones IP con demasiados intentos fallidos.
+✅ Mantén tu sistema y OpenSSH actualizados.
 
 
 ---
 
 🙌 Autor
 
-Creado y documentado por Camila ❤️
-
----
+Creado y documentado por Camila❤️
